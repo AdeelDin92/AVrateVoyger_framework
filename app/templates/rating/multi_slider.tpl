@@ -1,134 +1,156 @@
+<div id="ratingform">
+    <h5>Please rate the following properties of the shown image.</h5>
 
-
-
-
-
-<style>
-
-.slider {
-  width: 100% !important;
-}
-
-
-</style>
-
-<div class="col-12" id="ratingform" >
-
-% is_audio = stimuli_file.split(".")[-1].lower() in ["wav", "flac", "ogg", "aac", "mp3", "opus"]
-% is_image = stimuli_file.split(".")[-1].lower() in ["jpg", "jpeg", "png", "gif", "tiff"]
-% is_video = not is_audio and not is_image
-
-
-
-<h5>Please rate the quality.</h5>
-% if is_audio:
-    <style type="text/css">
-    .slider::-webkit-slider-thumb  {
-      background: #ffc107;
-    }
-    .slider::-moz-range-thumb {
-      background: #ffc107;
-    }
-    .slider::-ms-thumb {
-      background: #ffc107;
-    }
+    <style>
+        .slider {
+            width: 100% !important;
+        }
     </style>
-% end
-% if is_video:
-    <style type="text/css">
-    .slider::-webkit-slider-thumb  {
-      background: #28a745;
+
+    <%
+    prompts = {
+        "p01": "A red colored car",
+        "p02": "A green cup and a blue cell phone",
+        "p03": "A pizza cooking an oven",
+        "p04": "Two cars on the street",
+        "p05": "A cat on the right of a tennis racket",
+        "p06": "A fish eating a pelican",
+        "p07": "Two cats and one dog sitting on the grass",
+        "p08": "A triangular pink stop sign. A pink stop sign in the shape of triangle",
+        "p09": "A couple of glasses are sitting on a table",
+        "p10": "A photo of a confused grizzly bear in calculus class",
+        "p11": "A connection point by which firefighters can tap into a water supply",
+        "p12": "A mechanical or electrical device for measuring time",
+        "p13": "A tennis racket underneath a traffic light",
+        "p14": "A pear cut into seven pieces arranged in a ring",
+        "p15": "A sheep to the right of a wine glass",
+        "p16": "A sign that says 'Diffusion'",
+        "p17": "Hyper-realistic photo of an abandoned industrial site during a storm",
+        "p18": "A sign that says 'Text to Image'",
+        "p19": "A bee is on a flower with a green background",
+        "p20": "A row of classic cars parked in a parking lot",
+        "p21": "A board that says 'make this day great'",
+        "p22": "A blue scooter parked in front of a store",
+        "p23": "A cocktail with chili peppers and a glass",
+        "p24": "Two geese walking along the bank of a river",
+        "p25": "Two penguins standing on the ground near some rocks",
+        "p26": "A pair of yellow sandals on a white surface",
+        "p27": "Adorable brown puppy sitting in wooden box",
+        "p28": "Woman strolling with her dog in a misty park",
+        "p29": "Man wearing hat strums guitar outdoors",
+        "p30": "A butterfly peacefully sitting on a lush leaf",
     }
-    .slider::-moz-range-thumb {
-      background: #28a745;
-    }
-    .slider::-ms-thumb {
-      background: #28a745;
-    }
-    </style>
-% end
 
+    imageid = stimuli_file.split("/")[-1].split(".")[0]
+    prompt = prompts.get(imageid, "")
+    %>
 
-  % route = f"save_rating?stimuli_idx={stimuli_idx}" if not train else "training/" + str(stimuli_idx + 1)
-  <form id="form1" action="/{{route}}" method="post">
+    
 
-<%
+    <%
+    aspects = [
+        ("image appeal", "refers to the quality of being attractive or interesting"),
+        ("realism", "refers to visuals that closely resemble natural real image"),
+        ("image quality", " refers to the technical quality of the images")
+    ]
+    
+    route = f"save_rating?stimuli_idx={stimuli_idx}" if not train else "training/" + str(stimuli_idx + 1)
+    %>
 
-is_av = "_av_" in stimuli_file and not is_audio
+    <form id="form1" action="/{{route}}" method="post">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                    <th scope="col"><small>bad</small></th>
+                    <th scope="col" style="text-align:center"></th>
+                    <th scope="col"><small>very good</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                % for aspect, description in aspects:
+                % aspect_key = aspect.replace(" ", "_")
+                <tr>
+                    <td style="width:30%">{{aspect}} <br><small>({{description}})</small></td>
+                    <td style="width:15%"><input type="number" min="1" max="5" id="label_range_{{aspect_key}}" style="width:3em" onchange="update_slider(this, 'range_{{aspect_key}}')" required></td>
+                    <td style="width:8em">1</td>
+                    <td style="width:50%">
+                        <input
+                            type="range"
+                            class="slider"
+                            name="range_{{aspect_key}}"
+                            id="range_{{aspect_key}}"
+                            min="1"
+                            max="5"
+                            value="3"
+                            oninput="slider_change(this)"
+                            onchange="slider_change(this)"
+                            list="steplist"
+                        />
+                        <datalist id="steplist">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                        </datalist>
+                    </td>
+                    <td style="width:8em">5</td>
+                </tr>
+                % end
 
+                <tr>
+                    <td colspan="5" style="border-style:none; padding-top:1em">Is the following text a good description of the image:</td>
+                </tr>
+                <tr>
+                    <td colspan="5" style="border-style:none">{{prompt}}</td>
+                </tr>
+                <%
+                aspect_key = "prompt_matching"
+                aspect = "prompt matching"
+                %>
+                <tr>
+                    <td style="width:15%"></td>
+                    <td style="width:15%"><input type="number" min="1" max="5" id="label_range_{{aspect_key}}" style="width:3em" onchange="update_slider(this, 'range_{{aspect_key}}')" required></td>
+                    <td style="width:8em">1</td>
+                    <td style="width:50%">
+                        <input
+                            type="range"
+                            class="slider"
+                            name="range_{{aspect_key}}"
+                            id="range_{{aspect_key}}"
+                            min="1"
+                            max="5"
+                            value="3"
+                            oninput="slider_change(this)"
+                            onchange="slider_change(this)"
+                            list="steplist"
+                        />
+                        <datalist id="steplist">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                        </datalist>
+                    </td>
+                    <td style="width:8em">5</td>
+                </tr>
+            </tbody>
+        </table>
 
-groups = [
-    {
-        "group": "Quality",
-        "adjectives": ["audio", "video"]
-    },
-    {
-        "group": "Are audio and video quality matching?",
-        "adjectives": ["matching"]
-    },
+        % include('templates/rating/common.tpl', stimuli_file=stimuli_file)
 
-]
+        <button type="submit" id="submitButton" class="btn btn-success btn-block">submit</button>
 
+        % if dev:
+        <button type="submit" class="btn btn-success" formnovalidate>skip (for dev)</button>
+        % end
 
-%>
-
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th scope="col"></th>
-          <th scope="col"></th>
-          <th scope="col"></th>
-          <th scope="col">not</th>
-          <th scope="col" style="text-align:center">applicable</th>
-          <th scope="col">very</th>
-        </tr>
-      </thead>
-      <tbody>
-        % for g in groups:
-
-            <tr><th colspan="5">{{g["group"]}}</th></tr>
-            % for adj in g["adjectives"]:
-              % adj_key = g["group"] + adj.replace(" ", "_")
-            <tr>
-              <td style="width:5%"></td>
-              <td style="width:15%" >{{adj}} </td>
-              <td style="width:15%" ><input type="number" id="label_range_{{adj_key}}" style="width:3em" onchange="update_slider(this, 'range_{{adj_key}}')" required></td>
-
-              <td style="width:8em">0</td>
-              <td style="width:50%">
-                <input
-                    type="range"
-                    class="form-range slider"
-                    name="range_{{adj_key}}"
-                    id="range_{{adj_key}}"
-                    min="0"
-                    max="100"
-                    value="50"
-                    oninput="slider_change(this)"
-                    onchange="slider_change(this)"
-                />
-
-              </td>
-              <td style="width:8em">100</th>
-            </tr>
-            % end
-        %end
-      </tbody>
-    </table>
-
-    % include('templates/rating/common.tpl', stimuli_file=stimuli_file)
-
-
-    <button type="submit" id="submitButton" class="btn btn-success btn-block" onclick="check_form(event)">submit</button>
-    % if dev:
-      <button type="submit" class="btn btn-success" formnovalidate>skip (for dev)</button>
-    % end
-
-    <div id="playonce" class="btn alert-danger" style="display:none;cursor:default; margin-top: 0.5em; margin-bottom: 0.5em" disabled>Please play the stimuli at least once.</div>
-  </form>
+        <div id="ratingselect" class="btn alert-danger" style="display:none;cursor:default; margin-top: 0.5em; margin-bottom: 0.5em" disabled>Please select a rating.</div>
+    </form>
 </div>
-
-
 
 <script>
     var slidersChanged = {};
@@ -136,15 +158,14 @@ groups = [
     for (const slider of document.querySelectorAll('input.slider')) {
         slidersChanged[slider.getAttribute("name")] = 0;
     }
+
     function update_slider(input, range_id) {
         var slider = document.getElementById(range_id);
         slider.value = input.value
     }
 
     function slider_change(slider) {
-        console.log("change");
         const label = document.getElementById("label_" + slider.getAttribute("name"));
-        //label.textContent = slider.value;
         label.value = slider.value;
 
         slidersChanged[slider.getAttribute("name")] = 1;
@@ -154,16 +175,8 @@ groups = [
             document.getElementById("submitButton").disabled = false;
         }
     }
-    function display_rating(){
-        document.getElementById("ratingform").style.display="block";
-    }
 
-    function check_form(event) {
-      console.log(document.getElementById("pi").value);
-      if (document.getElementById("pi").value == 0) {
-          document.getElementById("playonce").style.display="block";
-          event.preventDefault();
-          return
-      }
+    function display_rating() {
+        document.getElementById("ratingform").style.display = "block";
     }
 </script>

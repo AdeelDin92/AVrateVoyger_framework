@@ -7,17 +7,15 @@
 </div>
 
 <p>
-You will see differently encoded videos.
-The task will then be to evaluate the quality of the shown videos.
-The videos have a duration of 10-15 seconds.
+You will see various images.
+The task will then be to evaluate the images in terms of image quality, image appeal , realisim and text prompt matching.
+
 </p>
-<p>
-The training phase comprises shows you the rating scheme and the general interface.
-</p>
+
 
 
 <div class="alert alert-secondary" role="alert">
-Please answer as intuitive as possible. There are no right or wrong answers.
+Please rate the images carefully as possible. There are no right or wrong answers.
 </div>
 <div class="alert alert-secondary" role="alert">
 Please maximize your browser window.
@@ -29,4 +27,4 @@ Please maximize your browser window.
 
 
 
-% include("templates/precache.tpl", stimuli=stimuli)
+

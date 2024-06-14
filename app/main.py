@@ -12,6 +12,7 @@ import glob
 import random
 import datetime
 import time
+import sqlite3
 
 import bottle
 from bottle import Bottle
@@ -57,9 +58,6 @@ def stats(config, db):
     for row in db.execute('select c, count(c) as h from (select count(*) as c from ratings group by stimuli_file) group by c'):
         hist[row["c"]] = row["h"]
 
-    # can be used instead of the hist_dia
-    hist_str = json.dumps(hist, indent=4, sort_keys=True)
-
     hist_dia = ""
     for k in sorted(hist.keys()):
         hist_dia += f"{k:>3d}: {hist[k]*'#'} : {hist[k]} \n"
@@ -85,35 +83,44 @@ def static(filename):
     '''
     Serve static files
     '''
+    print(filename)
     return bottle.static_file(filename, root='./static')
 
 
-@app.route('/stimuli/<filename:path>')
-def static(filename):
-    '''
-    Serve stimuli files
-    '''
-    return bottle.static_file(filename, root='./stimuli')
+@app.route('/stimuli/<subfolder>/<filename:path>')
+def serve_stimuli(subfolder, filename):
+    """
+    Serve stimuli files with subfolder structure
+    """
+    return bottle.static_file(filename, root=f'./stimuli/{subfolder}')
+
+@app.route('/train/<subfolder>/<filename:path>')
+def serve_train(subfolder, filename):
+    """
+    Serve train files with subfolder structure
+    """
+    return bottle.static_file(filename, root=f'./train/{subfolder}')
 
 
-@app.route('/train/<filename:path>')
-def static(filename):
-    '''
-    Serve stimuli files
-    '''
-    return bottle.static_file(filename, root='./train')
+def test_database_connection():
+    try:
+        # Connect to the database
+        db = sqlite3.connect('ratings.db')
+        print("Database connected successfully")
+
+        # Close the database connection
+        db.close()
+        print("Database connection closed")
+    except Exception as e:
+        print("Error connecting to database:", e)
+
+# Call the function to test the database connection
+test_database_connection()
+
 
 
 def get_user_id_playlist(db, config):
     """ read user id from database """
-    if request.get_cookie("user_id") is not None:
-        # user id has already been created
-        user_id = int(request.get_cookie("user_id"))
-        res = db.execute('select * from user_playlist where user_id=?;', (user_id,)).fetchone()
-        if res is not None:
-            # otherwise use_id is somehow not properly registered
-            playlist = json.loads(res["playlist"])
-            return user_id, playlist
     if not db.execute("SELECT * FROM sqlite_master WHERE type='table' AND name='ratings'").fetchone():
         user_id = 1 # if ratings table does not exist: first user_id = 1
     else:
@@ -159,7 +166,7 @@ def questionnaire(config, db):
 
 
 @app.route('/questionnaire', method='POST')
-def questionnaire(db, config):
+def save_questionnaire(db, config):
     """
     saves questionnaire info into sqlite3 table,
     all user information (user_id is key in tables) are stored as JSON string
@@ -205,22 +212,22 @@ def start_test(config, db):
         stimuli=[config["playlist"][x] for x in playlist]
     )
 
-
 @app.route('/training/<stimuli_idx>')
 @app.route('/training/<stimuli_idx>', method="POST")
 def training(config, db, stimuli_idx):
-
     check_if_test_was_done_already(request, config)
     user_id = int(request.get_cookie("user_id"))
     stimuli_idx = int(stimuli_idx)
 
     if len(config["training"]) == 0:
-        #TODO redirect
         redirect('/rate/0')
         return
     if stimuli_idx >= len(config["training"]):
         redirect('/start_test')
         return
+
+    stimuli_file = config["training"][stimuli_idx]  # Full path including subfolder
+
     return bottle.template(
         config["template_folder"] + "/rate.tpl",
         title=config["title"],
@@ -228,18 +235,15 @@ def training(config, db, stimuli_idx):
         rating_template=config["rating_template"],
         stimuli_done=stimuli_idx,
         stimuli_idx=stimuli_idx,
-        stimuli_file=config["training"][stimuli_idx],
+        stimuli_file=stimuli_file,
         stimuli_count=len(config["training"]),
         user_id=user_id,
         dev=request.get_cookie("dev") == "1"
     )
 
 
-@app.route('/rate/<stimuli_idx>')  # Rating screen with stimuli_idx as variable
+@app.route('/rate/<stimuli_idx>')
 def rate(db, config, stimuli_idx):
-    """
-    show rating screen for one specific stimuli
-    """
     check_if_test_was_done_already(request, config)
     stimuli_done = int(request.get_cookie("stimuli_done"))
 
@@ -247,8 +251,9 @@ def rate(db, config, stimuli_idx):
     session_state = int(request.get_cookie("session_state"))
 
     playlist = json.loads(db.execute("SELECT playlist FROM user_playlist WHERE user_ID=?", (user_id,)).fetchone()["playlist"])
-
     stimuli_idx = playlist[stimuli_done]
+
+    stimuli_file = config["playlist"][stimuli_idx]  # Full path including subfolder
 
     return bottle.template(
         config["template_folder"] + "/rate.tpl",
@@ -256,26 +261,26 @@ def rate(db, config, stimuli_idx):
         rating_template=config["rating_template"],
         stimuli_done=stimuli_done,
         stimuli_idx=stimuli_idx,
-        stimuli_file=config["playlist"][stimuli_idx],
+        stimuli_file=stimuli_file,
         stimuli_count=config["max_stimuli"],
         user_id=user_id,
         dev=request.get_cookie("dev") == "1"
     )
 
-
 @app.route('/save_rating', method='POST')
 def save_rating(db, config):
     """
-    save rating for watched stimuli
+    Save rating for watched stimuli
     """
-    stimuli_idx = request.query.stimuli_idx  # extract current stimuli_idx from query
+    # Extract current stimuli_idx from query
+    stimuli_idx = request.query.stimuli_idx
     timestamp = create_timestamp()
 
     user_id = int(request.get_cookie("user_id"))
     stimuli_done = int(request.get_cookie("stimuli_done")) + 1
     response.set_cookie("stimuli_done", str(stimuli_done), path="/")
 
-    # get POST data ratings and write to DB
+    # Get POST data ratings and write to DB
     request_data_pairs = {}
     for item in request.forms:
         request_data_pairs[item] = request.forms.get(item)
@@ -284,15 +289,31 @@ def save_rating(db, config):
     stimuli_file = request_data_pairs["stimuli_file"]
     excluded = ["stimuli_idx", "stimuli_file"]
 
+    # Ensure the 'ratings' table exists
     db.execute('CREATE TABLE IF NOT EXISTS ratings (user_ID INTEGER, stimuli_ID TEXT, stimuli_file TEXT, rating_type TEXT, rating TEXT, timestamp TEXT);')
 
-    for item in filter(lambda x: x not in excluded , request_data_pairs):
+    # Insert data into the ratings table
+    for item in filter(lambda x: x not in excluded, request_data_pairs):
         db.execute(
             'INSERT INTO ratings VALUES (?,?,?,?,?,?);',
             (user_id, stimuli_ID, stimuli_file, item, request_data_pairs[item], timestamp)
         )
 
+    # Check if 'image_quality' is in the request and save it
+    if 'image_quality' in request_data_pairs:
+        db.execute(
+            'INSERT INTO ratings VALUES (?,?,?,?,?,?);',
+            (user_id, stimuli_ID, stimuli_file, 'image_quality', request_data_pairs['image_quality'], timestamp)
+        )
+
     db.commit()
+
+    # Log the data being saved
+    print("Data saved for user:", user_id)
+    print("Stimuli ID:", stimuli_ID)
+    print("Stimuli file:", stimuli_file)
+    print("Rating data:", request_data_pairs)
+    print("Timestamp:", timestamp)
 
     if stimuli_done >= config["max_stimuli"]:
         redirect('/finish')
@@ -417,10 +438,12 @@ def setup():
         sys.exit(-1)
     config["template_folder"] = "./templates"
 
-    config["playlist"] = sorted(list(glob.glob("./stimuli/*")))
-    config["training"] = sorted(list(glob.glob("./train/*")))
+    # Recursively get all image files in the subfolders
+    config["playlist"] = sorted([y for x in os.walk('./stimuli') for y in glob.glob(os.path.join(x[0], '*')) if os.path.isfile(y)])
+    config["training"] = sorted([y for x in os.walk('./train') for y in glob.glob(os.path.join(x[0], '*')) if os.path.isfile(y)])
+    
     config["do_training"] = len(config["training"]) > 0
-    if len(config["playlist"])  == 0:
+    if len(config["playlist"]) == 0:
         print("please store media files in app/stimuli")
         sys.exit(0)
 
@@ -445,7 +468,7 @@ def run_local_server():
     bottle.run(
         app=StripPathMiddleware(app),
         host='0.0.0.0',
-        port=8081,
+        port=8080, #changed port to 8080 to log the server from docker desktop
         debug=True,
         reloader=True
     )

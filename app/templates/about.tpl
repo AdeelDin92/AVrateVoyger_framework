@@ -6,10 +6,10 @@
 This is a crowd sourcing based perception test and is completely voluntary and can be stopped at any time.
 
 
-<p>For questions regarding implementation please contact: Steve Göring (email: <a href="mailto:steve.goering@tu-ilmenau.de">steve.goering@tu-ilmenau.de</a>)
+<p>For questions regarding implementation please contact: or Steve Göring (email: <a href="mailto:steve.goering@tu-ilmenau.de">steve.goering@tu-ilmenau.de</a>)
 </p>
 
 <p>
-This test is based on <a href="https://github.com/Telecommunication-Telemedia-Assessment/avrateVoyager">AvrateVoyager</a>.
+This test is based on <a href="https://github.com/Telecommunication-Telemedia-Assessment/avrateVoyager">AvrateVoyager</a>. Adeel Ud Din (email: <a href="mailto:adeel-ud.din@tu-ilmenau.de">adeel-ud.din@tu-ilmenau.de</a>)
 </p>
 

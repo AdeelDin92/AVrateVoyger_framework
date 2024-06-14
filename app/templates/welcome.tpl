@@ -12,7 +12,7 @@
 % if training:
 Before the actual test starts you will go through a short training phase to get used to the task.
 % end
-You will see short videos and are asked to rate them.
+You will see images and are required to rate them.
 Further details on the instructions are shown after the background questions.
 
 </p>
@@ -33,7 +33,7 @@ All data is stored in <strong>anonymized</strong> form and will be treated confi
 For management purposes this page uses <strong>cookies</strong>.
 </p>
 
-<p>For questions please contact: Steve Göring (email: <a href="mailto:steve.goering@tu-ilmenau.de">steve.goering@tu-ilmenau.de</a>).
+<p>For questions please contact:  Adeel Ud Din (email: <a href="mailto:adeel-ud.din@tu-ilmenau.de">adeel-ud.din@tu-ilmenau.de</a>) or Steve Göring (email: <a href="mailto:steve.goering@tu-ilmenau.de">steve.goering@tu-ilmenau.de</a>).
 </p>
 <p>
 
