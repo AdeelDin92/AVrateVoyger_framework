@@ -2,7 +2,7 @@
     "welcome_msg": "AI generated Image Quality Assessment",
     "rating_template": "rating/multi_slider.tpl",
     "title": "AI generated images quality assessment",
-    "max_stimuli": 150,
+    "max_stimuli": 200,
     "cookie_secret": "x-files-forever",
     "http_user_name": "stg7",
     "http_user_password": "test"
